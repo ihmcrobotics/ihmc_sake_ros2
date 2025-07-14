@@ -10,26 +10,24 @@ public class EZGripperCommand extends Packet<EZGripperCommand> implements Settab
 {
    public static final byte LEFT = (byte) 0;
    public static final byte RIGHT = (byte) 1;
+   public static final byte POSITION_CONTROL = (byte) 0;
+   public static final byte CALIBRATION = (byte) 1;
+   public static final byte ERROR_RESET = (byte) 2;
    /**
             * Specifies the side of the robot of the gripper being referred to
             */
    public byte robot_side_ = (byte) 255;
    /**
-            * Request the gripper to perform a calibration sequence
+            * Specifies the desired operation mode.
             */
-   public boolean calibrate_;
+   public byte operation_mode_ = (byte) 255;
    /**
-            * Request to reset the gripper error state after overheating
+            * The temperature limit. Once reached, the gripper will go into cooldown mode
+            * until the actuator's temperature falls by 10% of the temperature limit.
+            * By default set to 75. It is not recommended going above 80.
+            * Automatic cooldown can be disabled by setting this value to 255.
             */
-   public boolean reset_errors_;
-   /**
-            * Set to true to enable automatic cooldown
-            */
-   public boolean enable_auto_cooldown_;
-   /**
-            * Set to true to override the cooldown
-            */
-   public boolean override_cooldown_;
+   public byte temperature_limit_ = (byte) 75;
    /**
             * The goal position
             * 0.0 = fully closed, 1.0 = fully open
@@ -60,13 +58,9 @@ public class EZGripperCommand extends Packet<EZGripperCommand> implements Settab
    {
       robot_side_ = other.robot_side_;
 
-      calibrate_ = other.calibrate_;
+      operation_mode_ = other.operation_mode_;
 
-      reset_errors_ = other.reset_errors_;
-
-      enable_auto_cooldown_ = other.enable_auto_cooldown_;
-
-      override_cooldown_ = other.override_cooldown_;
+      temperature_limit_ = other.temperature_limit_;
 
       goal_position_ = other.goal_position_;
 
@@ -92,63 +86,39 @@ public class EZGripperCommand extends Packet<EZGripperCommand> implements Settab
    }
 
    /**
-            * Request the gripper to perform a calibration sequence
+            * Specifies the desired operation mode.
             */
-   public void setCalibrate(boolean calibrate)
+   public void setOperationMode(byte operation_mode)
    {
-      calibrate_ = calibrate;
+      operation_mode_ = operation_mode;
    }
    /**
-            * Request the gripper to perform a calibration sequence
+            * Specifies the desired operation mode.
             */
-   public boolean getCalibrate()
+   public byte getOperationMode()
    {
-      return calibrate_;
-   }
-
-   /**
-            * Request to reset the gripper error state after overheating
-            */
-   public void setResetErrors(boolean reset_errors)
-   {
-      reset_errors_ = reset_errors;
-   }
-   /**
-            * Request to reset the gripper error state after overheating
-            */
-   public boolean getResetErrors()
-   {
-      return reset_errors_;
+      return operation_mode_;
    }
 
    /**
-            * Set to true to enable automatic cooldown
+            * The temperature limit. Once reached, the gripper will go into cooldown mode
+            * until the actuator's temperature falls by 10% of the temperature limit.
+            * By default set to 75. It is not recommended going above 80.
+            * Automatic cooldown can be disabled by setting this value to 255.
             */
-   public void setEnableAutoCooldown(boolean enable_auto_cooldown)
+   public void setTemperatureLimit(byte temperature_limit)
    {
-      enable_auto_cooldown_ = enable_auto_cooldown;
+      temperature_limit_ = temperature_limit;
    }
    /**
-            * Set to true to enable automatic cooldown
+            * The temperature limit. Once reached, the gripper will go into cooldown mode
+            * until the actuator's temperature falls by 10% of the temperature limit.
+            * By default set to 75. It is not recommended going above 80.
+            * Automatic cooldown can be disabled by setting this value to 255.
             */
-   public boolean getEnableAutoCooldown()
+   public byte getTemperatureLimit()
    {
-      return enable_auto_cooldown_;
-   }
-
-   /**
-            * Set to true to override the cooldown
-            */
-   public void setOverrideCooldown(boolean override_cooldown)
-   {
-      override_cooldown_ = override_cooldown;
-   }
-   /**
-            * Set to true to override the cooldown
-            */
-   public boolean getOverrideCooldown()
-   {
-      return override_cooldown_;
+      return temperature_limit_;
    }
 
    /**
@@ -222,13 +192,9 @@ public class EZGripperCommand extends Packet<EZGripperCommand> implements Settab
 
       if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.robot_side_, other.robot_side_, epsilon)) return false;
 
-      if (!us.ihmc.idl.IDLTools.epsilonEqualsBoolean(this.calibrate_, other.calibrate_, epsilon)) return false;
+      if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.operation_mode_, other.operation_mode_, epsilon)) return false;
 
-      if (!us.ihmc.idl.IDLTools.epsilonEqualsBoolean(this.reset_errors_, other.reset_errors_, epsilon)) return false;
-
-      if (!us.ihmc.idl.IDLTools.epsilonEqualsBoolean(this.enable_auto_cooldown_, other.enable_auto_cooldown_, epsilon)) return false;
-
-      if (!us.ihmc.idl.IDLTools.epsilonEqualsBoolean(this.override_cooldown_, other.override_cooldown_, epsilon)) return false;
+      if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.temperature_limit_, other.temperature_limit_, epsilon)) return false;
 
       if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.goal_position_, other.goal_position_, epsilon)) return false;
 
@@ -251,13 +217,9 @@ public class EZGripperCommand extends Packet<EZGripperCommand> implements Settab
 
       if(this.robot_side_ != otherMyClass.robot_side_) return false;
 
-      if(this.calibrate_ != otherMyClass.calibrate_) return false;
+      if(this.operation_mode_ != otherMyClass.operation_mode_) return false;
 
-      if(this.reset_errors_ != otherMyClass.reset_errors_) return false;
-
-      if(this.enable_auto_cooldown_ != otherMyClass.enable_auto_cooldown_) return false;
-
-      if(this.override_cooldown_ != otherMyClass.override_cooldown_) return false;
+      if(this.temperature_limit_ != otherMyClass.temperature_limit_) return false;
 
       if(this.goal_position_ != otherMyClass.goal_position_) return false;
 
@@ -277,14 +239,10 @@ public class EZGripperCommand extends Packet<EZGripperCommand> implements Settab
       builder.append("EZGripperCommand {");
       builder.append("robot_side=");
       builder.append(this.robot_side_);      builder.append(", ");
-      builder.append("calibrate=");
-      builder.append(this.calibrate_);      builder.append(", ");
-      builder.append("reset_errors=");
-      builder.append(this.reset_errors_);      builder.append(", ");
-      builder.append("enable_auto_cooldown=");
-      builder.append(this.enable_auto_cooldown_);      builder.append(", ");
-      builder.append("override_cooldown=");
-      builder.append(this.override_cooldown_);      builder.append(", ");
+      builder.append("operation_mode=");
+      builder.append(this.operation_mode_);      builder.append(", ");
+      builder.append("temperature_limit=");
+      builder.append(this.temperature_limit_);      builder.append(", ");
       builder.append("goal_position=");
       builder.append(this.goal_position_);      builder.append(", ");
       builder.append("max_effort=");

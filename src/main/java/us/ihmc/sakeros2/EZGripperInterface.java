@@ -4,6 +4,8 @@ import us.ihmc.robotics.robotSide.RobotSide;
 
 public interface EZGripperInterface
 {
+   int RAW_RANGE_OF_MOTION = 2500;
+
    /**
     * Get the robot's side this gripper is attached to.
     *
@@ -14,31 +16,15 @@ public interface EZGripperInterface
    // COMMAND METHODS //
 
    /**
-    * Command the gripper to calibrate.
-    */
-   void calibrate();
-   boolean pollCalibrate();
-
-   /**
-    * Reset the errors reported by the gripper.
-    */
-   void resetErrors();
-   boolean pollResetErrors();
-
-   /**
-    * Set whether to enable automatic cooldown.
+    * <p>Start the calibration process.</p>
+    * <p>Generally the grippers can be calibrated by closing until the fingers collide,
+    * then recording the position as the fully closed position. The open position is
+    * 2500 raw position units away from the closed position.</p>
     *
-    * @param enable Whether to enable automatic cooldown.
+    * @return {@code true} if calibration is complete.
+    *       If {@code false} is returned, this method must be called again before any other commands are given to the gripper.
     */
-   void enableAutoCooldown(boolean enable);
-   boolean autoCooldownEnabled();
-
-   /**
-    * Use to control the gripper while it's cooling down.
-    * Not recommended unless strictly necessary.
-    */
-   void overrideCooldown();
-   boolean pollOverrideCooldown();
+   boolean updateCalibration();
 
    /**
     * Set the goal position.
@@ -47,6 +33,7 @@ public interface EZGripperInterface
     * @param goalPosition The goal position.
     */
    void setGoalPosition(float goalPosition);
+
    float getGoalPosition();
 
    /**
@@ -57,6 +44,7 @@ public interface EZGripperInterface
     * @param maxEffort Maximum effort to put into achieving the goal position.
     */
    void setMaxEffort(float maxEffort);
+
    float getMaxEffort();
 
    /**
@@ -66,33 +54,27 @@ public interface EZGripperInterface
     * @param on Whether to turn the torque on.
     */
    void setTorqueOn(boolean on);
+
    boolean getTorqueOnCommand();
 
    // STATE METHODS //
    float getCurrentPosition();
+
    void setCurrentPosition(float currentPosition);
 
    float getCurrentEffort();
+
    void setCurrentEffort(float currentEffort);
 
    byte getTemperature();
+
    void setCurrentTemperature(byte currentTemperature);
 
    int getRealtimeTick();
+
    void setRealtimeTick(int realtimeTick);
 
    byte getErrorCode();
+
    void setErrorCode(byte errorCode);
-
-   boolean isCalibrated();
-   void setCalibrated(boolean isCalibrated);
-
-   boolean isCalibrating();
-   void setCalibrating(boolean isCalibrating);
-
-   boolean isCoolingDown();
-   void setCoolingDown(boolean isCoolingDown);
-
-   boolean autoCooldownEnabledStatus();
-   void setAutoCooldownEnabledStatus(boolean autoCooldownEnabled);
 }

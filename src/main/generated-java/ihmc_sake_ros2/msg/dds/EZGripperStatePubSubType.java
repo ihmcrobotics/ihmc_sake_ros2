@@ -15,7 +15,7 @@ public class EZGripperStatePubSubType implements us.ihmc.pubsub.TopicDataType<ih
    @Override
    public final java.lang.String getDefinitionChecksum()
    {
-   		return "40fbda5fdc0be7d12f9b88d402e90b5199aea5f4c4402df45de30e45acf496f6";
+   		return "e4f3876b6c0e76e5bbe152141f04d7c9ab52b18caba2429e48c4f900154cd845";
    }
    
    @Override
@@ -56,19 +56,15 @@ public class EZGripperStatePubSubType implements us.ihmc.pubsub.TopicDataType<ih
 
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
-      current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
-
-      current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
-
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
       current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
 
-      current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
+      current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
 
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
-      current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
+      current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
 
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
@@ -91,25 +87,19 @@ public class EZGripperStatePubSubType implements us.ihmc.pubsub.TopicDataType<ih
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
 
-      current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
-
-
-      current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
-
-
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
 
       current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
 
 
-      current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
+      current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
 
 
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
 
-      current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
+      current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
 
 
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
@@ -123,23 +113,19 @@ public class EZGripperStatePubSubType implements us.ihmc.pubsub.TopicDataType<ih
    {
       cdr.write_type_9(data.getRobotSide());
 
+      cdr.write_type_9(data.getOperationMode());
+
       cdr.write_type_9(data.getTemperature());
 
       cdr.write_type_5(data.getCurrentPosition());
 
       cdr.write_type_5(data.getCurrentEffort());
 
-      cdr.write_type_9(data.getErrorCodes());
+      cdr.write_type_9(data.getErrorCode());
 
       cdr.write_type_2(data.getRealtimeTick());
 
       cdr.write_type_7(data.getIsCalibrated());
-
-      cdr.write_type_7(data.getIsCalibrating());
-
-      cdr.write_type_7(data.getIsCoolingDown());
-
-      cdr.write_type_7(data.getAutomaticCooldownEnabled());
 
    }
 
@@ -147,23 +133,19 @@ public class EZGripperStatePubSubType implements us.ihmc.pubsub.TopicDataType<ih
    {
       data.setRobotSide(cdr.read_type_9());
       	
+      data.setOperationMode(cdr.read_type_9());
+      	
       data.setTemperature(cdr.read_type_9());
       	
       data.setCurrentPosition(cdr.read_type_5());
       	
       data.setCurrentEffort(cdr.read_type_5());
       	
-      data.setErrorCodes(cdr.read_type_9());
+      data.setErrorCode(cdr.read_type_9());
       	
       data.setRealtimeTick(cdr.read_type_2());
       	
       data.setIsCalibrated(cdr.read_type_7());
-      	
-      data.setIsCalibrating(cdr.read_type_7());
-      	
-      data.setIsCoolingDown(cdr.read_type_7());
-      	
-      data.setAutomaticCooldownEnabled(cdr.read_type_7());
       	
 
    }
@@ -172,30 +154,26 @@ public class EZGripperStatePubSubType implements us.ihmc.pubsub.TopicDataType<ih
    public final void serialize(ihmc_sake_ros2.msg.dds.EZGripperState data, us.ihmc.idl.InterchangeSerializer ser)
    {
       ser.write_type_9("robot_side", data.getRobotSide());
+      ser.write_type_9("operation_mode", data.getOperationMode());
       ser.write_type_9("temperature", data.getTemperature());
       ser.write_type_5("current_position", data.getCurrentPosition());
       ser.write_type_5("current_effort", data.getCurrentEffort());
-      ser.write_type_9("error_codes", data.getErrorCodes());
+      ser.write_type_9("error_code", data.getErrorCode());
       ser.write_type_2("realtime_tick", data.getRealtimeTick());
       ser.write_type_7("is_calibrated", data.getIsCalibrated());
-      ser.write_type_7("is_calibrating", data.getIsCalibrating());
-      ser.write_type_7("is_cooling_down", data.getIsCoolingDown());
-      ser.write_type_7("automatic_cooldown_enabled", data.getAutomaticCooldownEnabled());
    }
 
    @Override
    public final void deserialize(us.ihmc.idl.InterchangeSerializer ser, ihmc_sake_ros2.msg.dds.EZGripperState data)
    {
       data.setRobotSide(ser.read_type_9("robot_side"));
+      data.setOperationMode(ser.read_type_9("operation_mode"));
       data.setTemperature(ser.read_type_9("temperature"));
       data.setCurrentPosition(ser.read_type_5("current_position"));
       data.setCurrentEffort(ser.read_type_5("current_effort"));
-      data.setErrorCodes(ser.read_type_9("error_codes"));
+      data.setErrorCode(ser.read_type_9("error_code"));
       data.setRealtimeTick(ser.read_type_2("realtime_tick"));
       data.setIsCalibrated(ser.read_type_7("is_calibrated"));
-      data.setIsCalibrating(ser.read_type_7("is_calibrating"));
-      data.setIsCoolingDown(ser.read_type_7("is_cooling_down"));
-      data.setAutomaticCooldownEnabled(ser.read_type_7("automatic_cooldown_enabled"));
    }
 
    public static void staticCopy(ihmc_sake_ros2.msg.dds.EZGripperState src, ihmc_sake_ros2.msg.dds.EZGripperState dest)

@@ -6,6 +6,7 @@ import us.ihmc.ros2.ROS2NodeBuilder;
 import us.ihmc.ros2.ROS2Publisher;
 import us.ihmc.ros2.ROS2Subscription;
 import us.ihmc.ros2.RealtimeROS2Node;
+import us.ihmc.sakeros2.EZGripperManager.OperationMode;
 
 /**
  * <p>Hardware side ROS 2 communication for the {@link EZGripperInterface}. Communicates with external controller.</p>
@@ -35,45 +36,38 @@ public class EZGripperROS2ControllerCommunication
    }
 
    /**
-    * Read the latest command into the hand object.
+    * Read the latest command into the gripper manager object.
     *
-    * @param handToPack Hand object to pack with the latest command.
+    * @param gripperManager Gripper manager to update using the latest command.
     */
-   public void readCommand(EZGripperInterface handToPack)
+   public void readCommand(EZGripperManager gripperManager)
    {
-      if (commandListener.flushAndGetLatest(commandMessage, handToPack.getRobotSide()))
+      if (commandListener.readLatestMessage(gripperManager.getGripper().getRobotSide(), commandMessage))
       {
-         if (commandMessage.getCalibrate())
-            handToPack.calibrate();
-         if (commandMessage.getResetErrors())
-            handToPack.resetErrors();
-         if (commandMessage.getOverrideCooldown())
-            handToPack.overrideCooldown();
+         gripperManager.setOperationMode(OperationMode.fromByte(commandMessage.getOperationMode()));
 
-         handToPack.enableAutoCooldown(commandMessage.getEnableAutoCooldown());
-         handToPack.setGoalPosition(commandMessage.getGoalPosition());
-         handToPack.setMaxEffort(commandMessage.getMaxEffort());
-         handToPack.setTorqueOn(commandMessage.getTorqueOn());
+         gripperManager.setTemperatureLimit(commandMessage.getTemperatureLimit());
+         gripperManager.setGoalPosition(commandMessage.getGoalPosition());
+         gripperManager.setMaxEffort(commandMessage.getMaxEffort());
+         gripperManager.setTorqueOn(commandMessage.getTorqueOn());
       }
    }
 
    /**
     * Publish the hand's state.
     *
-    * @param handToPublish The hand to publish.
+    * @param managerToPublish The manager of the hand to publish.
     */
-   public void publishState(EZGripperInterface handToPublish)
+   public void publishState(EZGripperManager managerToPublish)
    {
-      stateMessage.setRobotSide(handToPublish.getRobotSide().toByte());
-      stateMessage.setCurrentPosition(handToPublish.getCurrentPosition());
-      stateMessage.setCurrentEffort(handToPublish.getCurrentEffort());
-      stateMessage.setTemperature(handToPublish.getTemperature());
-      stateMessage.setRealtimeTick(handToPublish.getRealtimeTick());
-      stateMessage.setErrorCodes(handToPublish.getErrorCode());
-      stateMessage.setIsCalibrated(handToPublish.isCalibrated());
-      stateMessage.setIsCalibrating(handToPublish.isCalibrating());
-      stateMessage.setIsCoolingDown(handToPublish.isCoolingDown());
-      stateMessage.setAutomaticCooldownEnabled(handToPublish.autoCooldownEnabledStatus());
+      stateMessage.setRobotSide(managerToPublish.getGripper().getRobotSide().toByte());
+      stateMessage.setOperationMode(managerToPublish.getOperationMode().toByte());
+      stateMessage.setTemperature(managerToPublish.getGripper().getTemperature());
+      stateMessage.setCurrentPosition(managerToPublish.getGripper().getCurrentPosition());
+      stateMessage.setCurrentEffort(managerToPublish.getGripper().getCurrentEffort());
+      stateMessage.setErrorCode(managerToPublish.getGripper().getErrorCode());
+      stateMessage.setRealtimeTick(managerToPublish.getGripper().getRealtimeTick());
+      stateMessage.setIsCalibrated(managerToPublish.isCalibrated());
 
       statePublisher.publish(stateMessage);
    }

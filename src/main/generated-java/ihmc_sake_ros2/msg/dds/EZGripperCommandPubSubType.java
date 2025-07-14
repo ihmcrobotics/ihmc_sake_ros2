@@ -15,7 +15,7 @@ public class EZGripperCommandPubSubType implements us.ihmc.pubsub.TopicDataType<
    @Override
    public final java.lang.String getDefinitionChecksum()
    {
-   		return "b3982bc0f25570ec12f259fd77fa1661a5e8101bf92c721c17840a5c3476dc16";
+   		return "fb3cc1de1fab78cf86a5cc088d8bbbb49f2aaa6dbea5a154fa24c703e8e3c166";
    }
    
    @Override
@@ -58,10 +58,6 @@ public class EZGripperCommandPubSubType implements us.ihmc.pubsub.TopicDataType<
 
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
-      current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
-
-      current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
-
       current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
 
       current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
@@ -90,12 +86,6 @@ public class EZGripperCommandPubSubType implements us.ihmc.pubsub.TopicDataType<
       current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
 
 
-      current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
-
-
-      current_alignment += 1 + us.ihmc.idl.CDR.alignment(current_alignment, 1);
-
-
       current_alignment += 4 + us.ihmc.idl.CDR.alignment(current_alignment, 4);
 
 
@@ -113,13 +103,9 @@ public class EZGripperCommandPubSubType implements us.ihmc.pubsub.TopicDataType<
    {
       cdr.write_type_9(data.getRobotSide());
 
-      cdr.write_type_7(data.getCalibrate());
+      cdr.write_type_9(data.getOperationMode());
 
-      cdr.write_type_7(data.getResetErrors());
-
-      cdr.write_type_7(data.getEnableAutoCooldown());
-
-      cdr.write_type_7(data.getOverrideCooldown());
+      cdr.write_type_9(data.getTemperatureLimit());
 
       cdr.write_type_5(data.getGoalPosition());
 
@@ -133,13 +119,9 @@ public class EZGripperCommandPubSubType implements us.ihmc.pubsub.TopicDataType<
    {
       data.setRobotSide(cdr.read_type_9());
       	
-      data.setCalibrate(cdr.read_type_7());
+      data.setOperationMode(cdr.read_type_9());
       	
-      data.setResetErrors(cdr.read_type_7());
-      	
-      data.setEnableAutoCooldown(cdr.read_type_7());
-      	
-      data.setOverrideCooldown(cdr.read_type_7());
+      data.setTemperatureLimit(cdr.read_type_9());
       	
       data.setGoalPosition(cdr.read_type_5());
       	
@@ -154,10 +136,8 @@ public class EZGripperCommandPubSubType implements us.ihmc.pubsub.TopicDataType<
    public final void serialize(ihmc_sake_ros2.msg.dds.EZGripperCommand data, us.ihmc.idl.InterchangeSerializer ser)
    {
       ser.write_type_9("robot_side", data.getRobotSide());
-      ser.write_type_7("calibrate", data.getCalibrate());
-      ser.write_type_7("reset_errors", data.getResetErrors());
-      ser.write_type_7("enable_auto_cooldown", data.getEnableAutoCooldown());
-      ser.write_type_7("override_cooldown", data.getOverrideCooldown());
+      ser.write_type_9("operation_mode", data.getOperationMode());
+      ser.write_type_9("temperature_limit", data.getTemperatureLimit());
       ser.write_type_5("goal_position", data.getGoalPosition());
       ser.write_type_5("max_effort", data.getMaxEffort());
       ser.write_type_7("torque_on", data.getTorqueOn());
@@ -167,10 +147,8 @@ public class EZGripperCommandPubSubType implements us.ihmc.pubsub.TopicDataType<
    public final void deserialize(us.ihmc.idl.InterchangeSerializer ser, ihmc_sake_ros2.msg.dds.EZGripperCommand data)
    {
       data.setRobotSide(ser.read_type_9("robot_side"));
-      data.setCalibrate(ser.read_type_7("calibrate"));
-      data.setResetErrors(ser.read_type_7("reset_errors"));
-      data.setEnableAutoCooldown(ser.read_type_7("enable_auto_cooldown"));
-      data.setOverrideCooldown(ser.read_type_7("override_cooldown"));
+      data.setOperationMode(ser.read_type_9("operation_mode"));
+      data.setTemperatureLimit(ser.read_type_9("temperature_limit"));
       data.setGoalPosition(ser.read_type_5("goal_position"));
       data.setMaxEffort(ser.read_type_5("max_effort"));
       data.setTorqueOn(ser.read_type_7("torque_on"));

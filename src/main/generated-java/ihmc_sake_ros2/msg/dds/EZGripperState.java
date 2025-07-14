@@ -10,10 +10,18 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
 {
    public static final byte LEFT = (byte) 0;
    public static final byte RIGHT = (byte) 1;
+   public static final byte POSITION_CONTROL = (byte) 0;
+   public static final byte CALIBRATION = (byte) 1;
+   public static final byte ERROR_RESET = (byte) 2;
+   public static final byte COOLDOWN = (byte) 3;
    /**
             * Specifies the side of the robot of the gripper being referred to
             */
    public byte robot_side_ = (byte) 255;
+   /**
+            * Specifies the current operation mode.
+            */
+   public byte operation_mode_ = (byte) 255;
    /**
             * Temperature of the Dynamixel in Celsius
             */
@@ -29,19 +37,19 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
             */
    public float current_effort_;
    /**
-            * Dynamixel's error codes
+            * Dynamixel's error code
             * See: https://emanual.robotis.com/docs/en/dxl/protocol1/#error
             */
-   public byte error_codes_;
+   public byte error_code_;
    /**
             * Realtime tick of the Dynamixel
             * If this value isn't changing, communication with the gripper is broken
             */
    public int realtime_tick_;
+   /**
+            * Whether the hand has been calibrated
+            */
    public boolean is_calibrated_;
-   public boolean is_calibrating_;
-   public boolean is_cooling_down_;
-   public boolean automatic_cooldown_enabled_;
 
    public EZGripperState()
    {
@@ -57,23 +65,19 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
    {
       robot_side_ = other.robot_side_;
 
+      operation_mode_ = other.operation_mode_;
+
       temperature_ = other.temperature_;
 
       current_position_ = other.current_position_;
 
       current_effort_ = other.current_effort_;
 
-      error_codes_ = other.error_codes_;
+      error_code_ = other.error_code_;
 
       realtime_tick_ = other.realtime_tick_;
 
       is_calibrated_ = other.is_calibrated_;
-
-      is_calibrating_ = other.is_calibrating_;
-
-      is_cooling_down_ = other.is_cooling_down_;
-
-      automatic_cooldown_enabled_ = other.automatic_cooldown_enabled_;
 
    }
 
@@ -90,6 +94,21 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
    public byte getRobotSide()
    {
       return robot_side_;
+   }
+
+   /**
+            * Specifies the current operation mode.
+            */
+   public void setOperationMode(byte operation_mode)
+   {
+      operation_mode_ = operation_mode;
+   }
+   /**
+            * Specifies the current operation mode.
+            */
+   public byte getOperationMode()
+   {
+      return operation_mode_;
    }
 
    /**
@@ -142,20 +161,20 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
    }
 
    /**
-            * Dynamixel's error codes
+            * Dynamixel's error code
             * See: https://emanual.robotis.com/docs/en/dxl/protocol1/#error
             */
-   public void setErrorCodes(byte error_codes)
+   public void setErrorCode(byte error_code)
    {
-      error_codes_ = error_codes;
+      error_code_ = error_code;
    }
    /**
-            * Dynamixel's error codes
+            * Dynamixel's error code
             * See: https://emanual.robotis.com/docs/en/dxl/protocol1/#error
             */
-   public byte getErrorCodes()
+   public byte getErrorCode()
    {
-      return error_codes_;
+      return error_code_;
    }
 
    /**
@@ -175,40 +194,19 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
       return realtime_tick_;
    }
 
+   /**
+            * Whether the hand has been calibrated
+            */
    public void setIsCalibrated(boolean is_calibrated)
    {
       is_calibrated_ = is_calibrated;
    }
+   /**
+            * Whether the hand has been calibrated
+            */
    public boolean getIsCalibrated()
    {
       return is_calibrated_;
-   }
-
-   public void setIsCalibrating(boolean is_calibrating)
-   {
-      is_calibrating_ = is_calibrating;
-   }
-   public boolean getIsCalibrating()
-   {
-      return is_calibrating_;
-   }
-
-   public void setIsCoolingDown(boolean is_cooling_down)
-   {
-      is_cooling_down_ = is_cooling_down;
-   }
-   public boolean getIsCoolingDown()
-   {
-      return is_cooling_down_;
-   }
-
-   public void setAutomaticCooldownEnabled(boolean automatic_cooldown_enabled)
-   {
-      automatic_cooldown_enabled_ = automatic_cooldown_enabled;
-   }
-   public boolean getAutomaticCooldownEnabled()
-   {
-      return automatic_cooldown_enabled_;
    }
 
 
@@ -231,23 +229,19 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
 
       if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.robot_side_, other.robot_side_, epsilon)) return false;
 
+      if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.operation_mode_, other.operation_mode_, epsilon)) return false;
+
       if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.temperature_, other.temperature_, epsilon)) return false;
 
       if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.current_position_, other.current_position_, epsilon)) return false;
 
       if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.current_effort_, other.current_effort_, epsilon)) return false;
 
-      if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.error_codes_, other.error_codes_, epsilon)) return false;
+      if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.error_code_, other.error_code_, epsilon)) return false;
 
       if (!us.ihmc.idl.IDLTools.epsilonEqualsPrimitive(this.realtime_tick_, other.realtime_tick_, epsilon)) return false;
 
       if (!us.ihmc.idl.IDLTools.epsilonEqualsBoolean(this.is_calibrated_, other.is_calibrated_, epsilon)) return false;
-
-      if (!us.ihmc.idl.IDLTools.epsilonEqualsBoolean(this.is_calibrating_, other.is_calibrating_, epsilon)) return false;
-
-      if (!us.ihmc.idl.IDLTools.epsilonEqualsBoolean(this.is_cooling_down_, other.is_cooling_down_, epsilon)) return false;
-
-      if (!us.ihmc.idl.IDLTools.epsilonEqualsBoolean(this.automatic_cooldown_enabled_, other.automatic_cooldown_enabled_, epsilon)) return false;
 
 
       return true;
@@ -264,23 +258,19 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
 
       if(this.robot_side_ != otherMyClass.robot_side_) return false;
 
+      if(this.operation_mode_ != otherMyClass.operation_mode_) return false;
+
       if(this.temperature_ != otherMyClass.temperature_) return false;
 
       if(this.current_position_ != otherMyClass.current_position_) return false;
 
       if(this.current_effort_ != otherMyClass.current_effort_) return false;
 
-      if(this.error_codes_ != otherMyClass.error_codes_) return false;
+      if(this.error_code_ != otherMyClass.error_code_) return false;
 
       if(this.realtime_tick_ != otherMyClass.realtime_tick_) return false;
 
       if(this.is_calibrated_ != otherMyClass.is_calibrated_) return false;
-
-      if(this.is_calibrating_ != otherMyClass.is_calibrating_) return false;
-
-      if(this.is_cooling_down_ != otherMyClass.is_cooling_down_) return false;
-
-      if(this.automatic_cooldown_enabled_ != otherMyClass.automatic_cooldown_enabled_) return false;
 
 
       return true;
@@ -294,24 +284,20 @@ public class EZGripperState extends Packet<EZGripperState> implements Settable<E
       builder.append("EZGripperState {");
       builder.append("robot_side=");
       builder.append(this.robot_side_);      builder.append(", ");
+      builder.append("operation_mode=");
+      builder.append(this.operation_mode_);      builder.append(", ");
       builder.append("temperature=");
       builder.append(this.temperature_);      builder.append(", ");
       builder.append("current_position=");
       builder.append(this.current_position_);      builder.append(", ");
       builder.append("current_effort=");
       builder.append(this.current_effort_);      builder.append(", ");
-      builder.append("error_codes=");
-      builder.append(this.error_codes_);      builder.append(", ");
+      builder.append("error_code=");
+      builder.append(this.error_code_);      builder.append(", ");
       builder.append("realtime_tick=");
       builder.append(this.realtime_tick_);      builder.append(", ");
       builder.append("is_calibrated=");
-      builder.append(this.is_calibrated_);      builder.append(", ");
-      builder.append("is_calibrating=");
-      builder.append(this.is_calibrating_);      builder.append(", ");
-      builder.append("is_cooling_down=");
-      builder.append(this.is_cooling_down_);      builder.append(", ");
-      builder.append("automatic_cooldown_enabled=");
-      builder.append(this.automatic_cooldown_enabled_);
+      builder.append(this.is_calibrated_);
       builder.append("}");
       return builder.toString();
    }

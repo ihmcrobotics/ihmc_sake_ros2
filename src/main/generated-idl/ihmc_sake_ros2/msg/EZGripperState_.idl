@@ -13,6 +13,18 @@ module ihmc_sake_ros2
       const octet RIGHT =
       1;
 
+      const octet POSITION_CONTROL =
+      0;
+
+      const octet CALIBRATION =
+      1;
+
+      const octet ERROR_RESET =
+      2;
+
+      const octet COOLDOWN =
+      3;
+
 
       @TypeCode(type="ihmc_sake_ros2::msg::dds_::EZGripperState_")
       struct EZGripperState
@@ -22,6 +34,11 @@ module ihmc_sake_ros2
          */
         @defaultValue(value=255)
         octet robot_side;
+        /**
+         * Specifies the current operation mode.
+         */
+        @defaultValue(value=255)
+        octet operation_mode;
         /**
          * Temperature of the Dynamixel in Celsius
          */
@@ -37,19 +54,19 @@ module ihmc_sake_ros2
          */
         float current_effort;
         /**
-         * Dynamixel's error codes
+         * Dynamixel's error code
          * See: https://emanual.robotis.com/docs/en/dxl/protocol1/#error
          */
-        octet error_codes;
+        octet error_code;
         /**
          * Realtime tick of the Dynamixel
          * If this value isn't changing, communication with the gripper is broken
          */
         long realtime_tick;
+        /**
+         * Whether the hand has been calibrated
+         */
         boolean is_calibrated;
-        boolean is_calibrating;
-        boolean is_cooling_down;
-        boolean automatic_cooldown_enabled;
       };
     };
   };

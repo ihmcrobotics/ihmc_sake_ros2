@@ -2,6 +2,8 @@ package us.ihmc.sakeros2;
 
 import ihmc_sake_ros2.msg.dds.EZGripperCommand;
 import ihmc_sake_ros2.msg.dds.EZGripperState;
+import us.ihmc.robotics.robotSide.RobotSide;
+import us.ihmc.robotics.robotSide.SideDependentList;
 import us.ihmc.ros2.ROS2NodeBuilder;
 import us.ihmc.ros2.ROS2Publisher;
 import us.ihmc.ros2.ROS2Subscription;
@@ -15,75 +17,96 @@ public class EZGripperROS2HardwareCommunication
 {
    private final RealtimeROS2Node node;
 
-   private final EZGripperState stateMessage;
    private final EZGripperMessageListener<EZGripperState> stateListener;
    private final ROS2Subscription<EZGripperState> stateSubscription;
-   private boolean receivedFirstState = false;
 
-   private final EZGripperCommand commandMessage;
+   private final SideDependentList<EZGripperCommand> commandMessages;
    private final ROS2Publisher<EZGripperCommand> commandPublisher;
 
    public EZGripperROS2HardwareCommunication(String nodeName)
    {
+      commandMessages = new SideDependentList<>();
+
       node = new ROS2NodeBuilder().buildRealtime(nodeName);
 
-      stateMessage = new EZGripperState();
       stateListener = new EZGripperMessageListener<>(EZGripperState::new);
+      stateListener.onNewHandRegistered(this::registerNewHand);
       stateSubscription = node.createSubscription(EZGripperROS2API.STATE_TOPIC, stateListener);
 
-      commandMessage = new EZGripperCommand();
       commandPublisher = node.createPublisher(EZGripperROS2API.COMMAND_TOPIC);
    }
 
-   /**
-    * Read the latest state into the hand object.
-    *
-    * @param handToPack Hand object to pack with the latest state.
-    */
-   public void readState(EZGripperInterface handToPack)
+   private void registerNewHand(RobotSide newGripperSide)
    {
-      if (stateListener.flushAndGetLatest(stateMessage, handToPack.getRobotSide()))
-      {
-         handToPack.setCurrentPosition(stateMessage.getCurrentPosition());
-         handToPack.setCurrentEffort(stateMessage.getCurrentEffort());
-         handToPack.setCurrentTemperature(stateMessage.getTemperature());
-         handToPack.setRealtimeTick(stateMessage.getRealtimeTick());
-         handToPack.setErrorCode(stateMessage.getErrorCodes());
-         handToPack.setCalibrated(stateMessage.getIsCalibrated());
-         handToPack.setCalibrating(stateMessage.getIsCalibrating());
-         handToPack.setCoolingDown(stateMessage.getIsCoolingDown());
-         handToPack.setAutoCooldownEnabledStatus(stateMessage.getAutomaticCooldownEnabled());
-         receivedFirstState = true;
-      }
+      EZGripperCommand commandMessage = new EZGripperCommand();
+      commandMessage.setRobotSide(newGripperSide.toByte());
+      commandMessages.put(newGripperSide, commandMessage);
    }
 
    /**
-    * Publish the hand's command.
+    * <p>Get the robot sides of the available grippers.</p>
+    * <p>Treat the array as read-only.</p>
     *
-    * @param handToPublish The hand to publish.
+    * @return Array of robot sides of the available grippers.
     */
-   public void publishCommand(EZGripperInterface handToPublish)
+   public RobotSide[] getAvailableGripperSides()
    {
-      commandMessage.setRobotSide(handToPublish.getRobotSide().toByte());
-      commandMessage.setCalibrate(handToPublish.pollCalibrate());
-      commandMessage.setResetErrors(handToPublish.pollResetErrors());
-      commandMessage.setEnableAutoCooldown(handToPublish.autoCooldownEnabled());
-      commandMessage.setOverrideCooldown(handToPublish.pollOverrideCooldown());
-      commandMessage.setGoalPosition(handToPublish.getGoalPosition());
-      commandMessage.setMaxEffort(handToPublish.getMaxEffort());
-      commandMessage.setTorqueOn(handToPublish.getTorqueOnCommand());
+      return commandMessages.sides();
+   }
+
+   /**
+    * Read the latest state of the specified gripper.
+    *
+    * @param messageToPack Message to pack with the latest state.
+    * @return {@code true} if a message was read. {@code false} if no message was available.
+    */
+   public boolean readState(RobotSide gripperSide, EZGripperState messageToPack)
+   {
+      return stateListener.readLatestMessage(gripperSide, messageToPack);
+   }
+
+   /**
+    * Read the latest state message of the specified gripper.
+    *
+    * @param gripperSide Robot side specifying the gripper.
+    * @return A copy of the latest state message.
+    */
+   public EZGripperState readState(RobotSide gripperSide)
+   {
+      EZGripperState stateMessage = new EZGripperState();
+      if (readState(gripperSide, stateMessage))
+         return stateMessage;
+
+      return null;
+   }
+
+   /**
+    * <p>Get the command message for the specified gripper.</p>
+    * <p>Use this method to set the desired command values.
+    * Then publish the command using {@link #publishCommand(RobotSide)}.</p>
+    *
+    * @param gripperSide Robot side specifying the gripper.
+    * @return A reference to the command message for the specified gripper.
+    */
+   public EZGripperCommand getCommand(RobotSide gripperSide)
+   {
+      return commandMessages.get(gripperSide);
+   }
+
+   /**
+    * Publish the command for the specified gripper.
+    *
+    * @param gripperSide Robot side specifying the gripper.
+    * @return {@code true} if the message was published. {@code false} if the gripper specified wasn't found.
+    */
+   public boolean publishCommand(RobotSide gripperSide)
+   {
+      EZGripperCommand commandMessage = commandMessages.get(gripperSide);
+      if (commandMessage == null)
+         return false;
 
       commandPublisher.publish(commandMessage);
-   }
-
-   /**
-    * Whether this object has received a state message.
-    *
-    * @return {@code true} if a state message has been received.
-    */
-   public boolean hasReceivedFirstState()
-   {
-      return receivedFirstState;
+      return true;
    }
 
    /**

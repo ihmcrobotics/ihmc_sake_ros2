@@ -3,82 +3,27 @@ package us.ihmc.sakeros2;
 import ihmc_sake_ros2.msg.dds.EZGripperCommand;
 import ihmc_sake_ros2.msg.dds.EZGripperState;
 import us.ihmc.communication.packets.Packet;
-import us.ihmc.concurrent.ConcurrentRingBuffer;
 import us.ihmc.pubsub.subscriber.Subscriber;
 import us.ihmc.robotics.robotSide.RobotSide;
+import us.ihmc.robotics.robotSide.SideDependentList;
 import us.ihmc.ros2.NewMessageListener;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class EZGripperMessageListener<T extends Packet<T>> implements NewMessageListener<T>
 {
-   private static final int QUEUE_SIZE = 5;
-
+   private final Supplier<T> newMessageSupplier;
    private final T message;
-   private final ConcurrentRingBuffer<T> leftMessageQueue;
-   private final ConcurrentRingBuffer<T> rightMessageQueue;
+   private final SideDependentList<T> gripperMessageList = new SideDependentList<>();
+   private final List<Consumer<RobotSide>> onNewGripperRegisteredConsumers = new ArrayList<>();
 
    public EZGripperMessageListener(Supplier<T> newMessageInstantiator)
    {
+      this.newMessageSupplier = newMessageInstantiator;
       message = newMessageInstantiator.get();
-
-      if (!(message instanceof EZGripperCommand || message instanceof EZGripperState))
-         throw new IllegalArgumentException("Only EZGripperCommand or EZGripperState message types allowed.");
-
-      leftMessageQueue = new ConcurrentRingBuffer<>(newMessageInstantiator::get, QUEUE_SIZE);
-      rightMessageQueue = new ConcurrentRingBuffer<>(newMessageInstantiator::get, QUEUE_SIZE);
-   }
-
-   public boolean poll(T data, RobotSide robotSide)
-   {
-      ConcurrentRingBuffer<T> commandQueue = getMessageQueue(robotSide);
-      if (commandQueue.poll())
-      {
-         T next = commandQueue.read();
-         data.set(next);
-         commandQueue.flush();
-         return true;
-      }
-      else
-      {
-         return false;
-      }
-   }
-
-   public boolean peek(T data, RobotSide robotSide)
-   {
-      ConcurrentRingBuffer<T> commandQueue = getMessageQueue(robotSide);
-      if(commandQueue.poll())
-      {
-         T next = commandQueue.peek();
-         data.set(next);
-         return true;
-      }
-      else
-      {
-         return false;
-      }
-   }
-
-   public boolean flushAndGetLatest(T data, RobotSide robotSide)
-   {
-      ConcurrentRingBuffer<T> commandQueue = getMessageQueue(robotSide);
-      if (commandQueue.poll())
-      {
-         T latest = commandQueue.read();
-         T next;
-         while ((next = commandQueue.read()) != null)
-         {
-            latest = next;
-         }
-         data.set(latest);
-         commandQueue.flush();
-         return true;
-      }
-      else
-      {
-         return false;
-      }
    }
 
    @Override
@@ -86,37 +31,54 @@ public class EZGripperMessageListener<T extends Packet<T>> implements NewMessage
    {
       subscriber.takeNextData(message, null);
 
-      ConcurrentRingBuffer<T> commandQueue= getMessageQueue(readHandSide(message));
-      T messageToPack = commandQueue.next();
-      if (messageToPack != null)
-      {
-         messageToPack.set(message);
-         commandQueue.commit();
-      }
-   }
-
-   private ConcurrentRingBuffer<T> getMessageQueue(RobotSide robotSide)
-   {
-      if (RobotSide.LEFT.equals(robotSide))
-      {
-         return leftMessageQueue;
-      }
-      else if (RobotSide.RIGHT.equals(robotSide))
-      {
-         return rightMessageQueue;
-      }
-
-      throw new IllegalArgumentException("Only LEFT or RIGHT gripper side can be accepted.");
-   }
-
-   private RobotSide readHandSide(T message)
-   {
+      RobotSide gripperSide;
       if (message instanceof EZGripperCommand commandMessage)
-         return RobotSide.fromByte(commandMessage.getRobotSide());
+      {
+         gripperSide = RobotSide.fromByte(commandMessage.getRobotSide());
+      }
       else if (message instanceof EZGripperState stateMessage)
-         return RobotSide.fromByte(stateMessage.getRobotSide());
+      {
+         gripperSide = RobotSide.fromByte(stateMessage.getRobotSide());
+      }
       else
-         throw new IllegalArgumentException("Only EZGripperCommand or EZGripperState message types allowed.");
+      {
+         throw new IllegalArgumentException("Unrecognized message type: " + message);
+      }
 
+      if (gripperMessageList.containsKey(gripperSide))
+      {
+         synchronized (gripperMessageList.get(gripperSide))
+         {
+            gripperMessageList.get(gripperSide).set(message);
+         }
+      }
+      else
+      {
+         T messageCopy = newMessageSupplier.get();
+         messageCopy.set(message);
+         gripperMessageList.put(gripperSide, messageCopy);
+         for (int i = 0; i < onNewGripperRegisteredConsumers.size(); ++i)
+         {
+            onNewGripperRegisteredConsumers.get(i).accept(gripperSide);
+         }
+      }
+   }
+
+   public boolean readLatestMessage(RobotSide gripperSide, T messageToPack)
+   {
+      if (!gripperMessageList.containsKey(gripperSide))
+         return false;
+
+      synchronized (gripperMessageList.get(gripperSide))
+      {
+         messageToPack.set(gripperMessageList.get(gripperSide));
+      }
+
+      return true;
+   }
+
+   public void onNewHandRegistered(Consumer<RobotSide> gripperSideConsumer)
+   {
+      onNewGripperRegisteredConsumers.add(gripperSideConsumer);
    }
 }
