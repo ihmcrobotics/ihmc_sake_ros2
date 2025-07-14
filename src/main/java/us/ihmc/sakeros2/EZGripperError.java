@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+/**
+ * Enum of errors that can be received from the EZGripper's actuator.
+ */
 public enum EZGripperError
 {
    // Values based off of Dynamixel Protocol 1.0 Error codes (https://emanual.robotis.com/docs/en/dxl/protocol1/#error)
@@ -31,11 +34,23 @@ public enum EZGripperError
       return name().replace("_", " ");
    }
 
+   /**
+    * Get the list of error names from the given error code.
+    *
+    * @param errorCode The error code.
+    * @return A list of the error names from the error code.
+    */
    public static List<String> getErrorNames(byte errorCode)
    {
       return getErrorList(errorCode).stream().map(EZGripperError::toString).toList();
    }
 
+   /**
+    * Get the list of error enum values from the given error code.
+    *
+    * @param errorCode The error code.
+    * @return A list of the error enum values from the error code.
+    */
    public static List<EZGripperError> getErrorList(byte errorCode)
    {
       List<EZGripperError> errorList = new ArrayList<>();

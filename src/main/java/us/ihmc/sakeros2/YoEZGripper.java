@@ -6,6 +6,10 @@ import us.ihmc.yoVariables.variable.YoBoolean;
 import us.ihmc.yoVariables.variable.YoDouble;
 import us.ihmc.yoVariables.variable.YoInteger;
 
+/**
+ * A partial implementation of the {@link EZGripperInterface} using YoVariables.
+ * Only the calibration is left to be implemented.
+ */
 public abstract class YoEZGripper implements EZGripperInterface
 {
    private final RobotSide robotSide;

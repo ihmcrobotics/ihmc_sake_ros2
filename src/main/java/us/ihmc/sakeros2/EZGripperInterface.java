@@ -2,6 +2,9 @@ package us.ihmc.sakeros2;
 
 import us.ihmc.robotics.robotSide.RobotSide;
 
+/**
+ * Generic interface for a SAKE EZGripper.
+ */
 public interface EZGripperInterface
 {
    int RAW_RANGE_OF_MOTION = 2500;
@@ -22,7 +25,7 @@ public interface EZGripperInterface
     * 2500 raw position units away from the closed position.</p>
     *
     * @return {@code true} if calibration is complete.
-    *       If {@code false} is returned, this method must be called again before any other commands are given to the gripper.
+    *       If {@code false} is returned, this method will be called again before any other commands are given to the gripper.
     */
    boolean updateCalibration();
 
