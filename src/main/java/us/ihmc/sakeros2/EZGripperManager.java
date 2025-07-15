@@ -89,6 +89,7 @@ public class EZGripperManager
       {
          case POSITION_CONTROL -> updatePositionControl();
          case COOLDOWN -> checkCooldown();
+         case ERROR_RESET -> setOperationMode(OperationMode.POSITION_CONTROL);
       }
    }
 
@@ -144,13 +145,19 @@ public class EZGripperManager
          gripper.setMaxEffort(0.0f);
          gripper.setTorqueOn(false);
          resettingError = true;
+         return;
       }
-      else
+
+      if (gripper.getErrorCode() == 0)
       {
-         gripper.setMaxEffort(0.05f);
-         gripper.setTorqueOn(true);
-         resettingError = false;
+         setOperationMode(OperationMode.POSITION_CONTROL);
+         gripper.setTorqueOn(false);
+         return;
       }
+
+      gripper.setMaxEffort(0.05f);
+      gripper.setTorqueOn(true);
+      resettingError = false;
    }
 
    /**
@@ -168,7 +175,7 @@ public class EZGripperManager
     * <p>0.0 = no effort (fingers will not move), 1.0 = maximum effort (can quickly overheat actuator).
     * 0.3 is a reasonable normal value, and it is recommended not to exceed 0.8.</p>
     *
-    * @param maxEffort
+    * @param maxEffort The maximum effort to use to read the goal position.
     */
    public void setMaxEffort(float maxEffort)
    {
