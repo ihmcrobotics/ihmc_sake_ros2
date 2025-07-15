@@ -27,14 +27,21 @@ public class YoEZGripperManager extends EZGripperManager
 
       String prefix = gripper.getRobotSide().name() + "EZGripperManager";
       desiredOperationMode = new YoEnum<>(prefix + "DesiredOperationMode", registry, OperationMode.class);
+      desiredOperationMode.set(OperationMode.POSITION_CONTROL);
       operationMode = new YoEnum<>(prefix + "operationMode", registry, OperationMode.class);
+      operationMode.set(OperationMode.POSITION_CONTROL);
 
       goalPosition = new YoDouble(prefix + "GoalPosition", registry);
+      goalPosition.set(0.1);
       maxEffort = new YoDouble(prefix + "MaxEffort", registry);
+      maxEffort.set(0.3);
       torqueOn = new YoBoolean(prefix + "TorqueOn", registry);
+      torqueOn.set(false);
       temperatureLimit = new YoInteger(prefix + "TemperatureLimit", registry);
+      temperatureLimit.set(75);
 
       isCalibrated = new YoBoolean(prefix + "IsCalibrated", registry);
+      isCalibrated.set(false);
    }
 
    @Override

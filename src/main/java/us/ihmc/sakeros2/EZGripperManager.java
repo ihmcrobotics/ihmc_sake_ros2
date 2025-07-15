@@ -29,15 +29,17 @@ public class EZGripperManager
    private OperationMode desiredOperationMode = OperationMode.POSITION_CONTROL;
    private OperationMode operationMode = desiredOperationMode;
 
-   private float goalPosition;
-   private float maxEffort;
-   private boolean torqueOn;
-   private byte temperatureLimit;
+   private float goalPosition = 0.1f;
+   private float maxEffort = 0.3f;
+   private boolean torqueOn = false;
+   private byte temperatureLimit = 75;
 
-   private boolean isCalibrated;
+   private boolean isCalibrated = false;
 
-   private boolean isCoolingDown;
-   private byte cooldownGoalTemp;
+   private boolean resettingError = false;
+
+   private boolean isCoolingDown = false;
+   private byte cooldownGoalTemp = (byte) (temperatureLimit - temperatureLimit / 10);
 
    public EZGripperManager(EZGripperInterface gripper)
    {
@@ -54,17 +56,25 @@ public class EZGripperManager
     */
    public void update()
    {
+      if (getGripper().getErrorCode() != 0)
+      {
+         // If the error needs to be reset, do so
+         if (desiredOperationMode == OperationMode.ERROR_RESET)
+         {
+            operationMode = OperationMode.ERROR_RESET;
+            updateErrorReset();
+         }
+         else
+         {
+            setMaxEffort(0.0f);
+            setTorqueOn(false);
+            return;
+         }
+      }
+
       // Check whether the gripper needs to cooldown if the auto cooldown isn't disabled
       if (temperatureLimit != DISABLE_AUTO_COOLDOWN && checkCooldown())
          return;
-
-      // If an error needs to be reset, do so as second priority
-      if (desiredOperationMode == OperationMode.ERROR_RESET)
-      {
-         operationMode = OperationMode.ERROR_RESET;
-         updateErrorReset();
-         return;
-      }
 
       // If calibration is requested or gripper is currently calibrating, update the calibration
       if (desiredOperationMode == OperationMode.CALIBRATION || operationMode == OperationMode.CALIBRATION)
@@ -122,21 +132,25 @@ public class EZGripperManager
       if (gripper.updateCalibration())
       {
          isCalibrated = true;
+         operationMode = OperationMode.POSITION_CONTROL;
          setOperationMode(OperationMode.POSITION_CONTROL);
       }
    }
 
    private void updateErrorReset()
    {
-      // If no error, go to position control
-      if (gripper.getErrorCode() == 0)
+      if (!resettingError)
       {
-         setOperationMode(OperationMode.POSITION_CONTROL);
-         return;
+         gripper.setMaxEffort(0.0f);
+         gripper.setTorqueOn(false);
+         resettingError = true;
       }
-
-      gripper.setMaxEffort(0.0f);
-      gripper.setTorqueOn(false);
+      else
+      {
+         gripper.setMaxEffort(0.05f);
+         gripper.setTorqueOn(true);
+         resettingError = false;
+      }
    }
 
    /**
