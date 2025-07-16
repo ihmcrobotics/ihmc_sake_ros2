@@ -6,6 +6,9 @@ import us.ihmc.robotics.stateMachine.factories.StateMachineFactory;
 
 import java.util.List;
 
+/**
+ * Manages higher-level control of an EZGripper, including calibration, position control, error resets, and automatic cooldowns.
+ */
 public class EZGripperManager
 {
    public enum OperationMode
@@ -80,6 +83,7 @@ public class EZGripperManager
       @Override
       public void doAction(double timeInState)
       {
+         // Don't do anything in case of error
          if (gripper.getErrorCode() != EZGripperError.NONE.errorCode)
          {
             gripper.setMaxEffort(0.0f);
@@ -87,6 +91,7 @@ public class EZGripperManager
             return;
          }
 
+         // Set the gripper to the desired values
          gripper.setGoalPosition(goalPosition);
          gripper.setMaxEffort(maxEffort);
          gripper.setTorqueOn(torqueOn);
@@ -126,29 +131,32 @@ public class EZGripperManager
 
    private class ErrorResetState implements State
    {
-      private boolean powerOff;
+      private byte step;
 
       @Override
       public void onEntry()
       {
-         powerOff = true;
+         step = 0;
       }
 
       @Override
       public void doAction(double timeInState)
       {
-         if (powerOff)
+         switch (step)
          {
-            gripper.setTorqueOn(false);
-            gripper.setMaxEffort(0.0f);
-            powerOff = false;
+            case 0 -> // First step: power off the Dynamixel
+            {
+               gripper.setTorqueOn(false);
+               gripper.setMaxEffort(0.0f);
+            }
+            case 1 -> // Second step: power the Dynamixel back on. This clears the error
+            {
+               gripper.setTorqueOn(true);
+               gripper.setMaxEffort(0.1f);
+            }
          }
-         else
-         {
-            gripper.setTorqueOn(true);
-            gripper.setMaxEffort(0.1f);
-            powerOff = true;
-         }
+
+         ++step;
       }
 
       @Override
@@ -161,7 +169,8 @@ public class EZGripperManager
       @Override
       public boolean isDone(double timeInState)
       {
-         return gripper.getErrorCode() == EZGripperError.NONE.errorCode;
+         // Done if there's no error, or we tried the two steps and failed to clear the error
+         return gripper.getErrorCode() == EZGripperError.NONE.errorCode || step >= 2;
       }
    }
 
@@ -178,6 +187,7 @@ public class EZGripperManager
       @Override
       public void doAction(double timeInState)
       {
+         // Power off the Dynamixel so it cools down
          gripper.setTorqueOn(false);
          gripper.setMaxEffort(0.0f);
       }
@@ -192,6 +202,7 @@ public class EZGripperManager
       @Override
       public boolean isDone(double timeInState)
       {
+         // Done if the cooldown is disabled or Dynamixel reaches the goal temperature
          return temperatureLimit == DISABLE_AUTO_COOLDOWN || Byte.compareUnsigned(gripper.getTemperature(), goalTemp) <= 0;
       }
    }
@@ -201,6 +212,9 @@ public class EZGripperManager
       return gripper;
    }
 
+   /**
+    * Updates the gripper commands based on operation mode. Should be called periodically.
+    */
    public void update()
    {
       stateMachine.doActionAndTransition();
