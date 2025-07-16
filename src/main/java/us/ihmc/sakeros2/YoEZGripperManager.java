@@ -34,7 +34,7 @@ public class YoEZGripperManager extends EZGripperManager
       goalPosition = new YoDouble(prefix + "GoalPosition", registry);
       goalPosition.set(0.1);
       maxEffort = new YoDouble(prefix + "MaxEffort", registry);
-      maxEffort.set(0.3);
+      maxEffort.set(0.0);
       torqueOn = new YoBoolean(prefix + "TorqueOn", registry);
       torqueOn.set(false);
       temperatureLimit = new YoInteger(prefix + "TemperatureLimit", registry);

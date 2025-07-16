@@ -1,8 +1,11 @@
 package us.ihmc.sakeros2;
 
-/**
- * Manages higher-level control of an EZGripper, including calibration, position control, error resets, and automatic cooldowns.
- */
+import us.ihmc.robotics.stateMachine.core.State;
+import us.ihmc.robotics.stateMachine.core.StateMachine;
+import us.ihmc.robotics.stateMachine.factories.StateMachineFactory;
+
+import java.util.List;
+
 public class EZGripperManager
 {
    public enum OperationMode
@@ -27,23 +30,156 @@ public class EZGripperManager
    private final EZGripperInterface gripper;
 
    private OperationMode desiredOperationMode = OperationMode.POSITION_CONTROL;
-   private OperationMode operationMode = desiredOperationMode;
+   private final StateMachine<OperationMode, State> stateMachine;
 
    private float goalPosition = 0.1f;
-   private float maxEffort = 0.3f;
+   private float maxEffort = 0.0f;
    private boolean torqueOn = false;
    private byte temperatureLimit = 75;
 
    private boolean isCalibrated = false;
 
-   private boolean resettingError = false;
-
-   private boolean isCoolingDown = false;
-   private byte cooldownGoalTemp = (byte) (temperatureLimit - temperatureLimit / 10);
-
    public EZGripperManager(EZGripperInterface gripper)
    {
       this.gripper = gripper;
+
+      StateMachineFactory<OperationMode, State> factory = new StateMachineFactory<>(OperationMode.class);
+      factory.buildClock(System::nanoTime);
+
+      // Add position control state
+      factory.addState(OperationMode.POSITION_CONTROL, new PositionControlState());
+
+      // Position control goes to calibration or error reset if demanded
+      factory.addTransition(OperationMode.POSITION_CONTROL, OperationMode.CALIBRATION, nanoTime -> desiredOperationMode == OperationMode.CALIBRATION);
+      factory.addTransition(OperationMode.POSITION_CONTROL, OperationMode.ERROR_RESET, nanoTime -> desiredOperationMode == OperationMode.ERROR_RESET);
+
+      // Add calibration state. Goes to position control once done.
+      factory.addStateAndDoneTransition(OperationMode.CALIBRATION, new CalibrationState(), OperationMode.POSITION_CONTROL);
+
+      // Add error reset state. Goes to position control once done.
+      factory.addStateAndDoneTransition(OperationMode.ERROR_RESET, new ErrorResetState(), OperationMode.POSITION_CONTROL);
+
+      // Add cooldown state. Goes to position control once done.
+      factory.addStateAndDoneTransition(OperationMode.COOLDOWN, new CooldownState(), OperationMode.POSITION_CONTROL);
+
+      // All other states go to cooldown if gripper overheats.
+      factory.addTransition(List.of(OperationMode.POSITION_CONTROL, OperationMode.CALIBRATION, OperationMode.ERROR_RESET),
+                            OperationMode.COOLDOWN,
+                            nanoTime -> temperatureLimit != DISABLE_AUTO_COOLDOWN && Byte.compareUnsigned(gripper.getTemperature(), temperatureLimit) > 0);
+
+      // Build the state machine
+      stateMachine = factory.build(OperationMode.POSITION_CONTROL);
+   }
+
+   private class PositionControlState implements State
+   {
+      @Override
+      public void onEntry() {}
+
+      @Override
+      public void doAction(double timeInState)
+      {
+         gripper.setGoalPosition(goalPosition);
+         gripper.setMaxEffort(maxEffort);
+         gripper.setTorqueOn(torqueOn);
+      }
+
+      @Override
+      public void onExit(double timeInState) {}
+   }
+
+   private class CalibrationState implements State
+   {
+      private boolean done = false;
+
+      @Override
+      public void onEntry() {}
+
+      @Override
+      public void doAction(double timeInState)
+      {
+         done = gripper.updateCalibration();
+      }
+
+      @Override
+      public void onExit(double timeInState)
+      {
+         isCalibrated = done;
+      }
+
+      @Override
+      public boolean isDone(double timeInState)
+      {
+         return done;
+      }
+   }
+
+   private class ErrorResetState implements State
+   {
+      private boolean powerOff;
+
+      @Override
+      public void onEntry()
+      {
+         powerOff = true;
+      }
+
+      @Override
+      public void doAction(double timeInState)
+      {
+         if (powerOff)
+         {
+            gripper.setTorqueOn(false);
+            gripper.setMaxEffort(0.0f);
+            powerOff = false;
+         }
+         else
+         {
+            gripper.setTorqueOn(true);
+            gripper.setMaxEffort(0.1f);
+            powerOff = true;
+         }
+      }
+
+      @Override
+      public void onExit(double timeInState)
+      {
+         gripper.setTorqueOn(false);
+         gripper.setMaxEffort(0.0f);
+      }
+
+      @Override
+      public boolean isDone(double timeInState)
+      {
+         return gripper.getErrorCode() == EZGripperError.NONE.errorCode;
+      }
+   }
+
+   private class CooldownState implements State
+   {
+      private byte goalTemp = (byte) 255;
+
+      @Override
+      public void onEntry()
+      {
+         goalTemp = (byte) (temperatureLimit - temperatureLimit / 10);
+      }
+
+      @Override
+      public void doAction(double timeInState)
+      {
+         gripper.setTorqueOn(false);
+         gripper.setMaxEffort(0.0f);
+      }
+
+      @Override
+      public void onExit(double timeInState) {}
+
+      @Override
+      public boolean isDone(double timeInState)
+      {
+         return temperatureLimit == DISABLE_AUTO_COOLDOWN || Byte.compareUnsigned(gripper.getTemperature(), goalTemp) <= 0;
+      }
    }
 
    public EZGripperInterface getGripper()
@@ -51,113 +187,9 @@ public class EZGripperManager
       return gripper;
    }
 
-   /**
-    * Updates the gripper commands based on operation mode. Should be called periodically.
-    */
    public void update()
    {
-      if (getGripper().getErrorCode() != 0)
-      {
-         // If the error needs to be reset, do so
-         if (desiredOperationMode == OperationMode.ERROR_RESET)
-         {
-            operationMode = OperationMode.ERROR_RESET;
-            updateErrorReset();
-         }
-         else
-         {
-            setMaxEffort(0.0f);
-            setTorqueOn(false);
-            return;
-         }
-      }
-
-      // Check whether the gripper needs to cooldown if the auto cooldown isn't disabled
-      if (temperatureLimit != DISABLE_AUTO_COOLDOWN && checkCooldown())
-         return;
-
-      // If calibration is requested or gripper is currently calibrating, update the calibration
-      if (desiredOperationMode == OperationMode.CALIBRATION || operationMode == OperationMode.CALIBRATION)
-      {
-         operationMode = OperationMode.CALIBRATION;
-         updateCalibration();
-         return;
-      }
-
-      operationMode = desiredOperationMode;
-      switch (operationMode)
-      {
-         case POSITION_CONTROL -> updatePositionControl();
-         case COOLDOWN -> checkCooldown();
-         case ERROR_RESET -> setOperationMode(OperationMode.POSITION_CONTROL);
-      }
-   }
-
-   private boolean checkCooldown()
-   {
-      // Check if gripper needs to start cooling down
-      if (!isCoolingDown && Byte.compareUnsigned(temperatureLimit, gripper.getTemperature()) < 0)
-      {
-         cooldownGoalTemp = (byte) (temperatureLimit - temperatureLimit / 10);
-         operationMode = OperationMode.COOLDOWN;
-         isCoolingDown = true;
-      }
-
-      // Check if gripper has cooled down sufficiently
-      if (isCoolingDown && Byte.compareUnsigned(cooldownGoalTemp, gripper.getTemperature()) >= 0)
-      {
-         setOperationMode(OperationMode.POSITION_CONTROL);
-         return isCoolingDown = false;
-      }
-
-      // Cooling down
-      if (isCoolingDown)
-      {
-         gripper.setMaxEffort(0.0f);
-         gripper.setGoalPosition(0.1f);
-         gripper.setTorqueOn(false);
-      }
-
-      return isCoolingDown;
-   }
-
-   private void updatePositionControl()
-   {
-      gripper.setGoalPosition(goalPosition);
-      gripper.setMaxEffort(maxEffort);
-      gripper.setTorqueOn(torqueOn);
-   }
-
-   private void updateCalibration()
-   {
-      if (gripper.updateCalibration())
-      {
-         isCalibrated = true;
-         operationMode = OperationMode.POSITION_CONTROL;
-         setOperationMode(OperationMode.POSITION_CONTROL);
-      }
-   }
-
-   private void updateErrorReset()
-   {
-      if (!resettingError)
-      {
-         gripper.setMaxEffort(0.0f);
-         gripper.setTorqueOn(false);
-         resettingError = true;
-         return;
-      }
-
-      if (gripper.getErrorCode() == 0)
-      {
-         setOperationMode(OperationMode.POSITION_CONTROL);
-         gripper.setTorqueOn(false);
-         return;
-      }
-
-      gripper.setMaxEffort(0.05f);
-      gripper.setTorqueOn(true);
-      resettingError = false;
+      stateMachine.doActionAndTransition();
    }
 
    /**
@@ -210,7 +242,8 @@ public class EZGripperManager
     */
    public OperationMode getOperationMode()
    {
-      return operationMode;
+      OperationMode currentMode = stateMachine.getCurrentStateKey();
+      return currentMode == null ? stateMachine.getInitialStateKey() : currentMode;
    }
 
    /**
