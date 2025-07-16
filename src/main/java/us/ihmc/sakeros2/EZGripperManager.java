@@ -52,6 +52,7 @@ public class EZGripperManager
       // Position control goes to calibration or error reset if demanded
       factory.addTransition(OperationMode.POSITION_CONTROL, OperationMode.CALIBRATION, nanoTime -> desiredOperationMode == OperationMode.CALIBRATION);
       factory.addTransition(OperationMode.POSITION_CONTROL, OperationMode.ERROR_RESET, nanoTime -> desiredOperationMode == OperationMode.ERROR_RESET);
+      factory.addTransition(OperationMode.POSITION_CONTROL, OperationMode.COOLDOWN, nanoTime -> desiredOperationMode == OperationMode.COOLDOWN);
 
       // Add calibration state. Goes to position control once done.
       factory.addStateAndDoneTransition(OperationMode.CALIBRATION, new CalibrationState(), OperationMode.POSITION_CONTROL);
@@ -79,6 +80,12 @@ public class EZGripperManager
       @Override
       public void doAction(double timeInState)
       {
+         if (gripper.getErrorCode() != EZGripperError.NONE.errorCode)
+         {
+            gripper.setMaxEffort(0.0f);
+            gripper.setTorqueOn(false);
+         }
+
          gripper.setGoalPosition(goalPosition);
          gripper.setMaxEffort(maxEffort);
          gripper.setTorqueOn(torqueOn);
