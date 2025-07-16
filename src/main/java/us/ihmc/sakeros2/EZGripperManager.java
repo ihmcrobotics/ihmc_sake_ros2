@@ -84,6 +84,7 @@ public class EZGripperManager
          {
             gripper.setMaxEffort(0.0f);
             gripper.setTorqueOn(false);
+            return;
          }
 
          gripper.setGoalPosition(goalPosition);
@@ -112,6 +113,7 @@ public class EZGripperManager
       public void onExit(double timeInState)
       {
          isCalibrated = done;
+         setTorqueOn(false);
          setOperationMode(OperationMode.POSITION_CONTROL);
       }
 
@@ -152,8 +154,7 @@ public class EZGripperManager
       @Override
       public void onExit(double timeInState)
       {
-         gripper.setTorqueOn(false);
-         gripper.setMaxEffort(0.0f);
+         setTorqueOn(false);
          setOperationMode(OperationMode.POSITION_CONTROL);
       }
 
@@ -184,6 +185,7 @@ public class EZGripperManager
       @Override
       public void onExit(double timeInState)
       {
+         setTorqueOn(false);
          setOperationMode(OperationMode.POSITION_CONTROL);
       }
 
