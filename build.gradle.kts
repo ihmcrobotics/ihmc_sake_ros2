@@ -5,7 +5,7 @@ plugins {
 ihmc {
    group = "us.ihmc"
    version = "0.0.0"
-   vcsUrl = "https://github.com/ihmcrobotics/ihmc_psyonic_ros2"
+   vcsUrl = "https://github.com/ihmcrobotics/ihmc_sake_ros2"
    openSource = true
 
    configureDependencyResolution()
