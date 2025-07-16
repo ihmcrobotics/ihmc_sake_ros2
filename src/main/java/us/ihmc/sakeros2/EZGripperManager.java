@@ -105,6 +105,7 @@ public class EZGripperManager
       public void onExit(double timeInState)
       {
          isCalibrated = done;
+         setOperationMode(OperationMode.POSITION_CONTROL);
       }
 
       @Override
@@ -146,6 +147,7 @@ public class EZGripperManager
       {
          gripper.setTorqueOn(false);
          gripper.setMaxEffort(0.0f);
+         setOperationMode(OperationMode.POSITION_CONTROL);
       }
 
       @Override
@@ -173,7 +175,10 @@ public class EZGripperManager
       }
 
       @Override
-      public void onExit(double timeInState) {}
+      public void onExit(double timeInState)
+      {
+         setOperationMode(OperationMode.POSITION_CONTROL);
+      }
 
       @Override
       public boolean isDone(double timeInState)
