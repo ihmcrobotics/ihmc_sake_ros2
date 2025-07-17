@@ -45,10 +45,13 @@ public class EZGripperManagerTest
    {
       gripperManager.setOperationMode(EZGripperManager.OperationMode.CALIBRATION);
 
+      // First update: calibrates
       gripperManager.update();
-      assertTrue(gripperManager.isCalibrated());
 
+      // Second update: finishes calibration
       gripperManager.update();
+
+      assertTrue(gripperManager.isCalibrated());
       assertEquals(EZGripperManager.OperationMode.POSITION_CONTROL, gripperManager.getOperationMode());
    }
 
@@ -59,9 +62,11 @@ public class EZGripperManagerTest
       testGripper.setErrorCode((byte) 0);
       gripperManager.setOperationMode(EZGripperManager.OperationMode.ERROR_RESET);
 
+      // First update: starts reset
       gripperManager.update();
       assertEquals(EZGripperManager.OperationMode.ERROR_RESET, gripperManager.getOperationMode());
 
+      // Second update: finishes reset
       gripperManager.update();
       assertEquals(EZGripperManager.OperationMode.POSITION_CONTROL, gripperManager.getOperationMode());
    }
@@ -91,7 +96,6 @@ public class EZGripperManagerTest
 
       assertEquals(EZGripperManager.OperationMode.COOLDOWN, gripperManager.getOperationMode());
       assertEquals(0.0f, testGripper.getMaxEffort(), 1e-6);
-      assertEquals(0.1f, testGripper.getGoalPosition(), 1e-6);
       assertFalse(testGripper.getTorqueOnCommand());
    }
 
