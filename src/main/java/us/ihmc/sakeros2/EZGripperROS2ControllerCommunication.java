@@ -25,7 +25,15 @@ public class EZGripperROS2ControllerCommunication
 
    public EZGripperROS2ControllerCommunication(String nodeName)
    {
-      node = new ROS2NodeBuilder().buildRealtime(nodeName);
+      this(nodeName, -1);
+   }
+
+   public EZGripperROS2ControllerCommunication(String nodeName, int domainId)
+   {
+      ROS2NodeBuilder nodeBuilder = new ROS2NodeBuilder();
+      if (domainId >= 0)
+         nodeBuilder.domainId(domainId);
+      node = nodeBuilder.buildRealtime(nodeName);
 
       stateMessage = new EZGripperState();
       statePublisher = node.createPublisher(EZGripperROS2API.STATE_TOPIC);
