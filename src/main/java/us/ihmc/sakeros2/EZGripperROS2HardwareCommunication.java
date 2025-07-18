@@ -25,9 +25,17 @@ public class EZGripperROS2HardwareCommunication
 
    public EZGripperROS2HardwareCommunication(String nodeName)
    {
+      this(nodeName, -1);
+   }
+
+   public EZGripperROS2HardwareCommunication(String nodeName, int domainId)
+   {
       commandMessages = new SideDependentList<>();
 
-      node = new ROS2NodeBuilder().buildRealtime(nodeName);
+      ROS2NodeBuilder nodeBuilder = new ROS2NodeBuilder();
+      if (domainId >= 0)
+         nodeBuilder.domainId(domainId);
+      node = nodeBuilder.buildRealtime(nodeName);
 
       stateListener = new EZGripperMessageListener<>(EZGripperState::new);
       stateListener.onNewHandRegistered(this::registerNewHand);

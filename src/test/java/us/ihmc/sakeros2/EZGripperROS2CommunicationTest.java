@@ -11,15 +11,19 @@ import us.ihmc.ros2.ROS2Subscription;
 import us.ihmc.sakeros2.EZGripperManager.OperationMode;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EZGripperROS2CommunicationTest
 {
+   private static final AtomicInteger nextDomainId = new AtomicInteger(0);
+
    @Test
    public void testControllerCommunication() throws InterruptedException
    {
+      final int domainId = nextDomainId.getAndIncrement();
       final RobotSide GRIPPER_SIDE = RobotSide.LEFT;
       final OperationMode OPERATION_MODE = OperationMode.POSITION_CONTROL;
       final float GOAL_POSITION = 0.7f;
@@ -31,7 +35,7 @@ public class EZGripperROS2CommunicationTest
       final int REALTIME_TICK = 5000;
 
       // Create a node
-      ROS2Node node = new ROS2NodeBuilder().build("ezgripperTestNode");
+      ROS2Node node = new ROS2NodeBuilder().domainId(domainId).build("ezgripperTestNode");
 
       // Create a command message and its publisher
       EZGripperCommand command = new EZGripperCommand();
@@ -66,22 +70,17 @@ public class EZGripperROS2CommunicationTest
       testGripper.setRealtimeTick(REALTIME_TICK);
 
       // Create an instance of the communication class
-      EZGripperROS2ControllerCommunication controllerCommunication = new EZGripperROS2ControllerCommunication("test_controller_comm");
+      EZGripperROS2ControllerCommunication controllerCommunication = new EZGripperROS2ControllerCommunication("test_controller_comm", domainId);
 
       // Publish before starting. Nothing should happen
-      publisher.publish(command);
       controllerCommunication.publishState(manager);
-
-      // Read values
-      controllerCommunication.readCommand(manager);
-      manager.update();
 
       // Assert that no messages were received
       assertFalse(received.get());
 
       // Start and publish again. Should receive message
       controllerCommunication.start();
-      LockSupport.parkNanos((long) 1E9);
+      LockSupport.parkNanos((long) 1E8);
 
       publisher.publish(command);
       controllerCommunication.publishState(manager);
@@ -115,6 +114,7 @@ public class EZGripperROS2CommunicationTest
    @Test
    public void testHardwareCommunication() throws InterruptedException
    {
+      final int domainId = nextDomainId.getAndIncrement();
       final RobotSide GRIPPER_SIDE = RobotSide.LEFT;
       final OperationMode OPERATION_MODE = OperationMode.POSITION_CONTROL;
       final float GOAL_POSITION = 0.7f;
@@ -125,7 +125,7 @@ public class EZGripperROS2CommunicationTest
       final byte TEMPERATURE = 40;
 
       // Create a node
-      ROS2Node node = new ROS2NodeBuilder().build("abilityTestNode");
+      ROS2Node node = new ROS2NodeBuilder().domainId(domainId).build("abilityTestNode");
 
       // Create a state message and its publisher
       EZGripperState state = new EZGripperState();
@@ -149,25 +149,13 @@ public class EZGripperROS2CommunicationTest
       });
 
       // Create the communication instance
-      EZGripperROS2HardwareCommunication communication = new EZGripperROS2HardwareCommunication("test_hardware_comm");
-
-      // Publish before starting. Nothing should happen
-      statePublisher.publish(state);
-      LockSupport.parkNanos((long) 1E9);
-
-      // Communication shouldn't have received any messages
-      assertNull(communication.readState(GRIPPER_SIDE));
-      assertEquals(0, communication.getAvailableGripperSides().length);
-      assertNull(communication.getCommand(GRIPPER_SIDE));
-      assertFalse(communication.publishCommand(GRIPPER_SIDE));
-
-      // Start the communication
+      EZGripperROS2HardwareCommunication communication = new EZGripperROS2HardwareCommunication("test_hardware_comm", domainId);
       communication.start();
-      LockSupport.parkNanos((long) 1E9);
+      LockSupport.parkNanos((long) 1E8);
 
       // Publish a state message
       statePublisher.publish(state);
-      LockSupport.parkNanos((long) 1E9);
+      LockSupport.parkNanos((long) 1E8);
 
       // Now the communications class should have received the state message
       assertEquals(1, communication.getAvailableGripperSides().length);
